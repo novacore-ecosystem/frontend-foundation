@@ -6,4 +6,4 @@ export type {
   FeatureFlags,
   BootstrapMetadata,
 } from "./types";
-export { isFeatureEnabled, createTranslatorFromBootstrap } from "./helpers";
+export { isFeatureEnabled, createTranslatorFromBootstrap, resolveTenantLocale } from "./helpers";
