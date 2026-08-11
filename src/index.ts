@@ -23,3 +23,4 @@ export * from "./string";
 export * from "./api";
 export * from "./validation";
 export * from "./authorization";
+export * from "./errors";

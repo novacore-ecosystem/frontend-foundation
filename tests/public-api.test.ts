@@ -10,16 +10,22 @@ import {
   formatDate,
   formatNumber,
   formatPhoneNumber,
+  getPermissionCategoryTranslationKey,
   hasAnyPermission,
   hasPermission,
   isEmail,
   isSuccessResponse,
+  isSupportedLocale,
   isValidPhoneNumber,
   MessageCode,
+  normalizeLocale,
   PAGINATION_DEFAULTS,
   Permissions,
   relativeTime,
+  resolveTenantLocale,
   slugify,
+  translateError,
+  translatePermissionCategory,
   type ApiResponse,
   type CurrentUserAuthorization,
   type PaginatedResult,
@@ -97,5 +103,29 @@ describe("public package API", () => {
     const current: CurrentUserAuthorization = { roles: ["Admin"], permissions: [Permissions.Order.Full] };
     expect(hasPermission(current.permissions, Permissions.Order.Delete)).toBe(true);
     expect(hasAnyPermission(current.permissions, [Permissions.Inventory.View, Permissions.Order.View])).toBe(true);
+  });
+
+  it("exposes locale contracts and normalizes a tenant bootstrap locale", () => {
+    expect(isSupportedLocale("vi")).toBe(true);
+    expect(normalizeLocale("en-US")).toBe("en");
+
+    const bootstrap: TenantBootstrap = { tenant: { id: "t1" }, locale: "en-US" };
+    expect(resolveTenantLocale(bootstrap)).toBe("en");
+  });
+
+  it("exposes error translation resolving a backend MessageCode to a localized message", () => {
+    const message = translateError(
+      { messageCode: MessageCode.UserNotFound, message: "User not found" },
+      { locale: "vi" },
+    );
+    expect(message).toBe("Không tìm thấy người dùng");
+  });
+
+  it("exposes permission category translation for admin UI display", () => {
+    const key = getPermissionCategoryTranslationKey(Permissions.Order.View);
+    expect(key).toBe("permissions.categories.order");
+
+    const translate = createTranslator({ application: { en: { permissions: { categories: { order: "Orders" } } } } }, { locale: "en" });
+    expect(translatePermissionCategory(Permissions.Order.View, translate)).toBe("Orders");
   });
 });
