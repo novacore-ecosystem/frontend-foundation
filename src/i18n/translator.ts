@@ -29,11 +29,11 @@ export class TranslationMissingError extends Error {
  * ```
  */
 export function createTranslator(sources: TranslationSources, options: CreateTranslatorOptions): Translator {
-  const { locale: defaultLocale, onMissingKey = "key", strict = false, interpolation } = options;
+  const { locale: defaultLocale, fallbackLocale, onMissingKey = "key", strict = false, interpolation } = options;
 
   return function translate(key, values, callOptions) {
     const locale = callOptions?.locale ?? defaultLocale;
-    const { value, found } = resolveTranslation(key, sources, locale);
+    const { value, found } = resolveTranslation(key, sources, locale, fallbackLocale);
 
     if (!found) {
       if (strict) throw new TranslationMissingError(key, locale);

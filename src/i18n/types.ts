@@ -43,6 +43,17 @@ export interface InterpolationOptions {
 export interface CreateTranslatorOptions {
   /** The default locale used to select dictionaries within each source. */
   locale: string;
+  /**
+   * A second locale to retry against (same tenant -> application ->
+   * fallback layer walk) when `locale` has no match for a key.
+   * `undefined` by default — no locale fallback, matching this
+   * translator's behavior before locale fallback existed. Framework
+   * adapters/apps building on the platform's `Locale` type will
+   * typically pass `DEFAULT_LOCALE` here (see the `i18n/locale`
+   * module) rather than leaving users of an incomplete locale with
+   * raw keys.
+   */
+  fallbackLocale?: string;
   /** Missing-key behavior. Defaults to `"key"`. */
   onMissingKey?: MissingKeyStrategy;
   /** Throw {@link TranslationMissingError} instead of applying `onMissingKey`. Defaults to `false`. */
