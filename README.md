@@ -8,7 +8,7 @@ A small set of framework-independent contracts, algorithms, and utilities that a
 
 **Runtime utilities**
 - Tenant bootstrap contract
-- Translation (i18n) resolution
+- A full shared internationalization architecture: locale standard, framework-independent translation resolution, tenant overrides, and shared translation resources (common/admin/auth/validation/errors/permissions terminology in English, Vietnamese, and Simplified Chinese)
 - Date/time utilities
 - Number and currency formatting
 - Phone number utilities
@@ -18,11 +18,11 @@ A small set of framework-independent contracts, algorithms, and utilities that a
 - API response envelope (`ApiResponse<T>`)
 - Pagination (`PaginatedResult<T>`, `CursorPaginatedResult<T>`)
 - Search criteria (`CriteriaRequest`, filters, sorts, operators)
-- Error/message codes (`MessageCode`) and validation error shape
+- Error/message codes (`MessageCode`), validation error shape, and error-code-to-translation-key mapping (`translateError`)
 - Backend-mirrored validation regex patterns (email, slug, SKU, barcode)
-- Permissions (`Permissions`) and framework-agnostic permission checking (`hasPermission`, `hasAnyPermission`, `hasAllPermissions`)
+- Permissions (`Permissions`), framework-agnostic permission checking (`hasPermission`, `hasAnyPermission`, `hasAllPermissions`), and permission category translation
 
-See [`docs/backend-contract-sync.md`](docs/backend-contract-sync.md) for exactly where every platform contract comes from in the backend, how frequently each is expected to change, and the process for keeping them in sync.
+See [`docs/backend-contract-sync.md`](docs/backend-contract-sync.md) for exactly where every platform contract comes from in the backend, how frequently each is expected to change, and the process for keeping them in sync. See [`docs/i18n.md`](docs/i18n.md) for the full internationalization architecture.
 
 ## What this is NOT
 
@@ -100,18 +100,32 @@ translate("welcome.message", { name: "Tan" }); // "Hello, Tan"
 
 There is no React context, Vue composable, or Angular service here by design; those belong in framework adapter packages. `createTranslatorFromBootstrap(bootstrap)` and `isFeatureEnabled(features, key)` are provided as small, framework-agnostic conveniences on top of the contract.
 
-### Translation resolution (`src/i18n`)
+### Internationalization (`src/i18n`)
 
-`createTranslator(sources, options)` returns a bound `translate(key, values?, callOptions?)` function. Resolution order per call:
+The full shared i18n architecture — **see [`docs/i18n.md`](docs/i18n.md) for the complete picture**; summary below.
+
+**Locale** (`src/i18n/locale`): `Locale` is a closed type (`"en" | "vi" | "zh-CN"`), not a bare `string` — `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` (`"en"`), and `LOCALE_METADATA` (English/native display names + text direction, e.g. `"Tiếng Việt"`, `"简体中文"`) are all centralized here. `normalizeLocale`/`resolveLocale` are the single boundary for turning an arbitrary string (`"en-US"`, `"zh-cn"`, a tenant bootstrap's raw `locale` field) into a `Locale`, so application code never writes `locale as Locale`.
+
+**Translation resolution**: `createTranslator(sources, options)` returns a bound `translate(key, values?, callOptions?)` function — still a plain closure, no framework dependency. Resolution order per call:
 
 ```text
-tenant override → application dictionary → fallback dictionary → the key itself
+tenant override (locale) → application dictionary (locale) → fallback dictionary (locale)
+  → [only if options.fallbackLocale is set] tenant override (fallbackLocale) → application (fallbackLocale) → fallback (fallbackLocale)
+  → the key itself (or onMissingKey's configured behavior)
 ```
+
+`fallbackLocale` is opt-in and defaults to `undefined` (no locale fallback — identical to this function's behavior before this phase), so it's a fully backward-compatible addition. Pass `DEFAULT_LOCALE` to get platform-standard behavior.
 
 - Dictionaries are keyed by locale (`TranslationBundle`) and support both flat dotted keys (`"welcome.message"`) and nested objects (`{ welcome: { message: "..." } }`) transparently.
 - Interpolation syntax is `{{name}}` (configurable delimiters via `options.interpolation`). Placeholders with no matching value are left untouched rather than silently emptied, so missing data stays visible.
 - Missing keys return the key itself by default (`onMissingKey: "key"`); `"empty"`, a custom function, or `strict: true` (throws `TranslationMissingError`) are also supported.
 - Locale can be overridden per call via the third argument.
+
+**Translation resources** (`src/i18n/resources`): this package ships its own English/Vietnamese/Simplified-Chinese resource dictionaries — `common.*` (actions, statuses, pagination, table states), `navigation.*`, `admin.*` (shared entity nouns), `auth.*`, `validation.*` (client-side form messages), `errors.*` (a representative `MessageCode` subset), and `permissions.*` (category-level fallback labels) — as `TRANSLATION_RESOURCES: Record<Locale, ...>`. Every non-English locale is declared `satisfies typeof en`, so a missing or extra key is a **TypeScript compile error**, not a silent runtime drift; `tests/i18n/resources.test.ts` runs the same completeness check at runtime too.
+
+**Type-safe keys, no code generation**: `TranslationKey` is a plain recursive TypeScript type derived from the English resource (`DotPath<typeof en>`) — autocomplete and typo-catching for this package's own keys, achieved without a build/codegen step. `Translator.key` itself stays plain `string` so applications/tenants can add their own keys beyond this baseline.
+
+**Tenant bootstrap integration**: `resolveTenantLocale(bootstrap)` (`src/bootstrap`) is the normalization boundary for `TenantBootstrap.locale`; `createTranslatorFromBootstrap` uses it automatically and defaults `fallbackLocale` to `DEFAULT_LOCALE`.
 
 ### Date/time (`src/date`)
 
@@ -219,7 +233,9 @@ switch (response.messageCode) {
 }
 ```
 
-Do not resolve user-facing copy from a hypothetical "default message" table for these codes — use the `i18n` module's `createTranslator`, keyed by the code, since the backend's actual `message` field can differ per call site. `ValidationFieldError` mirrors the backend's per-field validation error shape (`propertyName`/`errorMessage`) — see its doc comment for an important caveat: the backend currently computes this list but never actually sends it in `ApiResponse.details` (always `null` today).
+Do not resolve user-facing copy from a hypothetical "default message" table for these codes — use `translateError` (`src/errors`, built on the `i18n` module) instead, keyed by the code, since the backend's actual `message` field can differ per call site. `ValidationFieldError` mirrors the backend's per-field validation error shape (`propertyName`/`errorMessage`) — see its doc comment for an important caveat: the backend currently computes this list but never actually sends it in `ApiResponse.details` (always `null` today).
+
+**Error translation** (`src/errors`): `translateError(error, options)` resolves `{ messageCode, message }` (e.g. a failed `ApiResponse`) to a human-readable message — `translateError({ messageCode: MessageCode.UserNotFound, message: "..." }, { locale: "vi" })` → `"Không tìm thấy người dùng"`. `ERROR_DEFINITIONS` maps a **representative subset** of `MessageCode` (every non-success System/Validation/Client/Auth code, plus one illustrative code per business service — about 20 of the backend's ~90 codes) to a translation key and default message; the rest gracefully fall back to the backend-provided message, then a generic localized message, then (only in `{ debug: true }`) the raw code — never a raw key or code in production. See [`docs/i18n.md`](docs/i18n.md) §7 for the exact fallback chain and why the subset is intentionally not exhaustive.
 
 ### Validation patterns (`src/validation`)
 
@@ -246,6 +262,8 @@ hasPermission(currentUserPermissions, Permissions.Order.View);
 - `hasPermission`/`hasAnyPermission`/`hasAllPermissions` mirror the backend's `PermissionAuthorization.HasAnyPermission` evaluation rule exactly: `Permissions.Root` bypasses every check, and each required permission resolves either by exact match or via its module's `"{module}:full"` aggregate. They take the caller's owned permissions as a plain array — no implicit global state, no framework binding. `hasAllPermissions` has no direct backend equivalent (the backend only ever needs OR-semantics for a single endpoint guard) but is a safe, natural AND-composition of the same rule for frontend call sites gating a feature behind multiple permissions.
 - `CurrentUserAuthorization` (`{ roles, permissions }`) mirrors the `roles`/`permissions` fields of the User service's `GetUserDetailResponse` — the closest thing the backend has to a "current user's effective permissions" response (`GET /profiles/current/detail`). Per the backend handler's own doc comment, this is a **UI-only signal** (e.g. for conditionally rendering navigation) — actual authorization is always enforced server-side via the JWT's `permission` claims, never by this frontend check alone.
 
+**Permission translation** (`src/authorization/translation`): a permission identifier must stay technical (`"order:view"`), but a UI must never show that raw string. `getPermissionCategoryTranslationKey(permission)` derives a category-level translation key (`"order:view"` → `"permissions.categories.order"`; `Permissions.Root`/`Permissions.User` → their own dedicated keys), and `translatePermissionCategory(permission, translate)` resolves it to a label ("Orders", "Đơn hàng", "订单") via a caller-supplied translator. This package deliberately does **not** ship static translations for all 43 individual permission display names — the backend already owns that content dynamically and admin-editable via `PermissionDefinitionTranslation`/`PermissionGroupTranslation` (see `docs/i18n.md` §8); `PermissionDisplayInfo` documents the shape a future admin UI should expect when it fetches that data from the Auth service directly, and the category-level label is the safe fallback until/unless it's available.
+
 ## Issues for backend cleanup
 
 Found during the audit behind this package's platform contracts. Not fixed here — this is a frontend repo and the backend is the source of truth — but reported so the backend team can address them:
@@ -259,6 +277,7 @@ Found during the audit behind this package's platform contracts. Not fixed here 
 - **No shared `CurrencyCode` or `LanguageCode`/`Locale` enum exists in the backend.** Currency is validated only as a bare `^[A-Z]{3}$` string per-service (intentionally, per a doc comment — Payment's `Currency` type is deliberately service-local). This package's `currency`/`date` modules already use `Intl`'s locale/currency handling instead, so this is noted for awareness rather than as a gap to fill.
 - **Two independent "permission" vocabularies exist in the User service.** Only the colon-separated `Permissions.cs` vocabulary (the one actually enforced via the JWT `permission` claim) is mirrored here. User service also has its own dot-separated `PermissionCollection` value object (e.g. `"product.product.read"`) backing a separate, currently-unenforced business concept with no HTTP endpoint exposing it — not mirrored, and should not be merged into the same TypeScript type if it's ever wired up later.
 - **`Permissions.User` and `Permissions.Users` are easy to confuse** (see the Permissions section above) — this is a backend naming choice, preserved as-is rather than silently renamed.
+- **Backend and frontend supported-locale lists diverge.** Backend's `LanguageCodeConstant.SupportedLanguages` is `["en", "vi"]` only; this package supports `["en", "vi", "zh-CN"]`. Only backend-owned dynamic content (permission display-name translations) is affected — see `docs/i18n.md` §1 and §8, and `docs/backend-contract-sync.md`.
 
 ## Backend Contract Synchronization
 

@@ -28,17 +28,21 @@ All backend paths below are **repository-relative to the backend repository root
 | Permission claim wire format | `src/authorization/helpers/`, `src/authorization/types/` | `core-backend/src/BuildingBlocks/BuildingBlock.SharedKernel/Constants/AppClaimTypes.cs` | `AppClaimTypes`, `"permission"` | Moderate |
 | Current-user permissions ("me" response) | `src/authorization/types/` (`CurrentUserAuthorization`) | `core-backend/src/Services/User/User.Application/Features/Users/Queries/GetUserDetail/GetUserDetailQuery.cs` | `GetUserDetailResponse`, `IReadOnlyList<string> Permissions` | Moderate |
 | Tenant bootstrap | `src/bootstrap/` | *No single canonical backend endpoint found* — see "Known gaps" below | — | — |
+| Error code -> translation key mapping | `src/errors/definitions/` (`ErrorDefinition`) | `core-backend/src/BuildingBlocks/BuildingBlock.Domain/Enums/MessageCode.cs` (same source as "Error/status codes" above) | `MessageCode`, `ErrorDefinition` | **High** |
+| Supported languages (backend-owned dynamic content gate) | `src/i18n/locale/` (`SUPPORTED_LOCALES`) | `core-backend/src/BuildingBlocks/BuildingBlock.SharedKernel/Constants/LanguageCodeConstant.cs` | `LanguageCodeConstant`, `SupportedLanguages` | Moderate — see "Known gaps": backend and frontend currently **diverge** (`en`,`vi` vs. `en`,`vi`,`zh-CN`) |
+| Permission display name/description (dynamic, not mirrored) | `src/authorization/translation/` (`PermissionDisplayInfo`, contract only, no data) | `core-backend/src/Services/Auth/Auth.Domain/Entities/Permissions/PermissionDefinitionTranslation.cs`, `PermissionGroupTranslation.cs` | `PermissionDefinitionTranslation`, `PermissionGroupTranslation`, `LanguageCode` | Moderate — content itself changes via backend admin UI, not code changes |
 
 ## Synchronization priority
 
 **High-frequency** — expect these to change as the backend evolves feature-by-feature; re-audit on every backend release that touches auth or error handling:
 - Permissions (`Permissions.cs`) — new permission keys are added whenever a new module/action is added to any service.
 - Error/status codes (`MessageCode.cs`) — new codes are added per-service as error handling matures.
+- Error code -> translation key mapping (`errors/definitions`) — every time `MessageCode.cs` gains a code this package chooses to translate, `ERROR_DEFINITIONS` and the `errors.*` resource keys in all three locales need a matching addition (see `docs/i18n.md` §7 and §11).
 - Error response / validation error shape — currently has a known gap (see below); watch for the backend starting to actually populate `ApiResponse.details`.
 - Validation regex patterns — new canonical patterns may be added to `RegexPatterns`; existing ones may be fixed (see the phone number issue below).
 
 **Moderate** — change less often, usually only when the underlying architecture shifts, not per-feature:
-- API response envelope, pagination, search criteria, filter operators, permission claim wire format, current-user permissions response.
+- API response envelope, pagination, search criteria, filter operators, permission claim wire format, current-user permissions response, supported languages, permission display-name/description content.
 
 **Stable** — essentially fixed:
 - Sort direction (two values, unlikely to grow).
@@ -68,3 +72,5 @@ These were discovered during the backend audit and are intentionally **not** pap
 - **Field-level validation errors are computed server-side but never sent on the wire** (`ApiResponse.details` is always `null` today, even for validation failures) — `ValidationFieldError` is defined for forward compatibility, not because it's currently populated.
 - **Two independent "permission" vocabularies exist in the User service.** Only the colon-separated `Permissions.cs` vocabulary (the JWT `permission` claim, enforced by `PermissionAuthorization.HasAnyPermission`) is mirrored here. User service also has its own dot-separated `PermissionCollection` value object (e.g. `"product.product.read"`) backing a separate, currently-unenforced business concept with no HTTP endpoint exposing it — do not merge the two into one frontend type.
 - **`Permissions.User` (singular) and `Permissions.Users` (plural) are different concepts that share a near-identical name** in the backend itself. Preserved as-is (not renamed) per the "don't rename backend-mirrored properties casually" rule, but flagged here since it's an easy mistake to make when adding new call sites.
+- **Backend and frontend supported-locale lists currently diverge.** Backend's `LanguageCodeConstant.SupportedLanguages` is `["en", "vi"]` only; this package's `SUPPORTED_LOCALES` is `["en", "vi", "zh-CN"]` per explicit product requirement. This only affects backend-owned dynamic content gated by `LanguageCode` (permission/permission-group display-name translations, see the next item) — this package's own static UI/error/common terminology fully supports all three locales regardless, since it has no backend storage dependency. If/when the backend adds `zh-CN` to `LanguageCodeConstant`, no frontend change is needed.
+- **Permission display names/descriptions are backend-owned, dynamic, admin-editable content** (`PermissionDefinitionTranslation`/`PermissionGroupTranslation`, one row per `(entity, LanguageCode)`) — **not** mirrored as static translations in this package (see `docs/i18n.md` §8 for the full rationale). Because of the locale divergence above, a `zh-CN` row cannot currently be created for this content on the backend even though the frontend's own category-level fallback labels (`permissions.categories.*`) support `zh-CN` today.
