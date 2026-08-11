@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  buildCriteriaRequest,
   createTranslator,
   createTranslatorFromBootstrap,
+  criteriaFilter,
+  CriteriaOperators,
   formatCurrency,
   formatDate,
   formatNumber,
   formatPhoneNumber,
+  isEmail,
+  isSuccessResponse,
   isValidPhoneNumber,
+  MessageCode,
+  PAGINATION_DEFAULTS,
   relativeTime,
   slugify,
+  type ApiResponse,
+  type PaginatedResult,
   type TenantBootstrap,
 } from "../src/index";
 
@@ -48,5 +57,35 @@ describe("public package API", () => {
       { locale: "en" },
     );
     expect(directTranslator("key")).toBe("value");
+  });
+
+  it("exposes platform contracts (api response, pagination, search, error codes) working together", () => {
+    const paged: PaginatedResult<{ id: number }> = {
+      items: [{ id: 1 }],
+      pageNumber: PAGINATION_DEFAULTS.page,
+      pageSize: PAGINATION_DEFAULTS.pageSize,
+      totalCount: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalPages: 1,
+    };
+    const response: ApiResponse<PaginatedResult<{ id: number }>> = {
+      success: true,
+      message: "Request success",
+      messageCode: MessageCode.Success,
+      data: paged,
+    };
+    expect(isSuccessResponse(response)).toBe(true);
+
+    const request = buildCriteriaRequest({
+      keyword: "jun",
+      filters: [criteriaFilter("status", CriteriaOperators.In, ["active", "pending"])],
+    });
+    expect(request.filters).toEqual([{ field: "status", operator: "in", value: ["active", "pending"] }]);
+  });
+
+  it("exposes validation utilities backed by backend-mirrored patterns", () => {
+    expect(isEmail("tan@example.com")).toBe(true);
+    expect(isEmail("not-an-email")).toBe(false);
   });
 });
