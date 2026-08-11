@@ -2,17 +2,97 @@
   "session_id": "",
   "files_read": {
     "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/CLAUDE.md": {
-      "count": 1,
+      "count": 3,
       "tokens": 542,
       "first_read": "2026-08-11T07:10:30.747Z"
     },
     "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/CHANGELOG.md": {
-      "count": 1,
+      "count": 3,
       "tokens": 330,
       "first_read": "2026-08-11T07:11:07.125Z"
+    },
+    "/tmp/claude-1000/-home-tanhn-workspace-projects-NovaCore-FrontEnd-Common-frontend-foundation/d1436613-458e-4d16-bb94-f9ecc66317ac/scratchpad": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:16:57.535Z"
+    },
+    "/home/tanhn/.claude/projects/-home-tanhn-workspace-projects-NovaCore-FrontEnd-Common-frontend-foundation/d1436613-458e-4d16-bb94-f9ecc66317ac/tool-results/bgykbu9pp.txt": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:17:00.036Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/index.ts": {
+      "count": 2,
+      "tokens": 242,
+      "first_read": "2026-08-11T07:21:36.723Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/tests/public-api.test.ts": {
+      "count": 2,
+      "tokens": 840,
+      "first_read": "2026-08-11T07:22:40.952Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/README.md": {
+      "count": 7,
+      "tokens": 4850,
+      "first_read": "2026-08-11T07:23:59.367Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/i18n/resolve.ts": {
+      "count": 1,
+      "tokens": 513,
+      "first_read": "2026-08-11T07:33:34.257Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/i18n/types.ts": {
+      "count": 1,
+      "tokens": 681,
+      "first_read": "2026-08-11T07:33:50.537Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/i18n/translator.ts": {
+      "count": 1,
+      "tokens": 527,
+      "first_read": "2026-08-11T07:34:04.449Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/i18n/index.ts": {
+      "count": 1,
+      "tokens": 138,
+      "first_read": "2026-08-11T07:37:45.688Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/errors/definitions/index.ts": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:40:03.621Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/authorization/index.ts": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:40:55.210Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/bootstrap/helpers.ts": {
+      "count": 1,
+      "tokens": 435,
+      "first_read": "2026-08-11T07:41:14.186Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/bootstrap/index.ts": {
+      "count": 1,
+      "tokens": 64,
+      "first_read": "2026-08-11T07:41:50.298Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/src/authorization/translation/index.ts": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:42:16.927Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/tests/errors/errors.test.ts": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:44:17.899Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/docs/backend-contract-sync.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-08-11T07:46:47.814Z"
     }
   },
-  "anatomy_hits": 2,
-  "anatomy_misses": 0,
-  "repeated_reads_warned": 0
+  "anatomy_hits": 11,
+  "anatomy_misses": 7,
+  "repeated_reads_warned": 12
 }
