@@ -1,0 +1,18 @@
+{
+  "session_id": "",
+  "files_read": {
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/CLAUDE.md": {
+      "count": 1,
+      "tokens": 542,
+      "first_read": "2026-08-11T07:10:30.747Z"
+    },
+    "/home/tanhn/workspace/projects/NovaCore/FrontEnd/Common/frontend-foundation/CHANGELOG.md": {
+      "count": 1,
+      "tokens": 330,
+      "first_read": "2026-08-11T07:11:07.125Z"
+    }
+  },
+  "anatomy_hits": 2,
+  "anatomy_misses": 0,
+  "repeated_reads_warned": 0
+}
