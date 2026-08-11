@@ -14,18 +14,22 @@ A small set of framework-independent contracts, algorithms, and utilities that a
 - Phone number utilities
 - String utilities
 
-**Platform contracts** — TypeScript mirrors of the backend's shared Building Blocks, so every frontend app shares one typed representation instead of redefining the same response envelope, pagination shape, search request, error codes, and validation patterns:
+**Platform contracts** — TypeScript mirrors of the backend's shared Building Blocks, so every frontend app shares one typed representation instead of redefining the same response envelope, pagination shape, search request, error codes, validation patterns, and permission keys:
 - API response envelope (`ApiResponse<T>`)
 - Pagination (`PaginatedResult<T>`, `CursorPaginatedResult<T>`)
 - Search criteria (`CriteriaRequest`, filters, sorts, operators)
 - Error/message codes (`MessageCode`) and validation error shape
 - Backend-mirrored validation regex patterns (email, slug, SKU, barcode)
+- Permissions (`Permissions`) and framework-agnostic permission checking (`hasPermission`, `hasAnyPermission`, `hasAllPermissions`)
+
+See [`docs/backend-contract-sync.md`](docs/backend-contract-sync.md) for exactly where every platform contract comes from in the backend, how frequently each is expected to change, and the process for keeping them in sync.
 
 ## What this is NOT
 
 - **Not a UI library.** No components, no styling, no design system.
 - **Not React, Vue, Angular, or Razor code.** No hooks, no composables, no services, no context/providers.
 - **Not an i18n framework.** It provides the resolution *logic*; wiring it into a specific framework's state/reactivity model is the job of a future adapter package.
+- **Not a permission/auth framework with framework bindings.** `hasPermission`/`hasAnyPermission`/`hasAllPermissions` are plain functions over a permissions array — there is no `usePermission()` hook, no Vue composable, no Angular service here. Those belong in a future `@novacore/frontend-react` (etc.) package that wraps this module's functions.
 - **Not an API SDK.** It does not wrap `fetch`/`axios`, does not know your services' base URLs, and does not contain a generic HTTP client. It only provides the typed shapes and (de)serialization helpers for the parts of the wire contract that are genuinely shared across every backend service.
 - **Not a place for domain DTOs.** `UserDto`, `OrderDto`, `ProductDto`, `InventoryDto`, `PaymentDto`, `ShipmentDto`, and their domain-specific status enums (`OrderStatus`, `PaymentStatus`, ...) do not belong here — only cross-system contracts used by *every* service belong in this package. Domain DTOs belong to their own domain packages or a future generated API client.
 - **Not published yet.** This is an internal/private package (`"private": true` in `package.json`).
@@ -221,6 +225,27 @@ Do not resolve user-facing copy from a hypothetical "default message" table for 
 
 `EMAIL_REGEX`/`SLUG_REGEX`/`SKU_REGEX`/`BARCODE_REGEX` (plus their string-source `_PATTERN` counterparts) and `isEmail`/`isSlug`/`isSku`/`isBarcode` are mirrored verbatim from `NovaCore.BuildingBlock.SharedKernel.RegexPatterns`, so frontend and backend validation agree. **Phone number validation is deliberately not mirrored** — the backend's canonical phone regex is broken (it literally embeds JS regex-literal delimiters `/…/g` inside a .NET pattern), and the User service's actual rule (`^\d{10,}$`) is far more permissive than real phone validation. This package's existing `phone` module (backed by `libphonenumber-js`) remains the source of truth for phone validation; see "Issues for backend cleanup" below.
 
+### Permissions (`src/authorization`)
+
+`Permissions` mirrors `NovaCore.BuildingBlock.SharedKernel.Constants.Permissions` verbatim — the single, code-first canonical source of every permission key in the platform, referenced by every business service's `RequirePermissions(...)` calls:
+
+```ts
+import { Permissions, hasPermission } from "@novacore/frontend-foundation";
+
+Permissions.Root;                 // "system:root"
+Permissions.User;                 // "system:user" — baseline, every authenticated non-Root account
+Permissions.Order.View;           // "order:view"
+Permissions.Order.Full;           // "order:full" — implicitly grants every order:* permission
+
+hasPermission(currentUserPermissions, Permissions.Order.View);
+```
+
+- Keys are lowercase `module:action` strings (hyphenated for multi-word actions, e.g. `"inventory:stock-move"`) — not a TypeScript `enum`, matching how they're plain strings on every backend wire boundary too.
+- `PERMISSION_VALUES` is the flat list of every key (mirrors the backend's `Permissions.SupportedValues`), and `isKnownPermission(value)` validates an untyped string against it — mirroring the backend's `PermissionKey` value object, which validates the same way rather than via a format regex.
+- **Do not confuse `Permissions.User` (singular) with `Permissions.Users` (plural).** They're unrelated: `User` is the baseline capability every account has; `Users` is the admin module for managing *other* users' accounts. This naming collision exists in the backend source itself and is preserved intentionally rather than "cleaned up" in the frontend mirror.
+- `hasPermission`/`hasAnyPermission`/`hasAllPermissions` mirror the backend's `PermissionAuthorization.HasAnyPermission` evaluation rule exactly: `Permissions.Root` bypasses every check, and each required permission resolves either by exact match or via its module's `"{module}:full"` aggregate. They take the caller's owned permissions as a plain array — no implicit global state, no framework binding. `hasAllPermissions` has no direct backend equivalent (the backend only ever needs OR-semantics for a single endpoint guard) but is a safe, natural AND-composition of the same rule for frontend call sites gating a feature behind multiple permissions.
+- `CurrentUserAuthorization` (`{ roles, permissions }`) mirrors the `roles`/`permissions` fields of the User service's `GetUserDetailResponse` — the closest thing the backend has to a "current user's effective permissions" response (`GET /profiles/current/detail`). Per the backend handler's own doc comment, this is a **UI-only signal** (e.g. for conditionally rendering navigation) — actual authorization is always enforced server-side via the JWT's `permission` claims, never by this frontend check alone.
+
 ## Issues for backend cleanup
 
 Found during the audit behind this package's platform contracts. Not fixed here — this is a frontend repo and the backend is the source of truth — but reported so the backend team can address them:
@@ -232,10 +257,12 @@ Found during the audit behind this package's platform contracts. Not fixed here 
 - **Slug validation is defined twice.** `RegexPatterns.Slug()` (SharedKernel, mirrored here as canonical) and `Product.Domain`'s own local `Slug` value object use slightly different patterns (capturing vs. non-capturing group, no `IgnoreCase` flag) instead of sharing one definition.
 - **Several near-identical "code" value objects are defined independently.** Six backend value objects (`RoleKey`, `PermissionGroupCode`, `TenantCode`, `PositionCode`, `RoleCode`, `ScopeCode`) each redeclare the same snake_case identifier pattern (`^[a-z][a-z0-9]*(_[a-z0-9]+)*$`) rather than referencing one shared constant. Not mirrored here since none currently live in `BuildingBlock.SharedKernel`, but flagged as a candidate for a future canonical pattern.
 - **No shared `CurrencyCode` or `LanguageCode`/`Locale` enum exists in the backend.** Currency is validated only as a bare `^[A-Z]{3}$` string per-service (intentionally, per a doc comment — Payment's `Currency` type is deliberately service-local). This package's `currency`/`date` modules already use `Intl`'s locale/currency handling instead, so this is noted for awareness rather than as a gap to fill.
+- **Two independent "permission" vocabularies exist in the User service.** Only the colon-separated `Permissions.cs` vocabulary (the one actually enforced via the JWT `permission` claim) is mirrored here. User service also has its own dot-separated `PermissionCollection` value object (e.g. `"product.product.read"`) backing a separate, currently-unenforced business concept with no HTTP endpoint exposing it — not mirrored, and should not be merged into the same TypeScript type if it's ever wired up later.
+- **`Permissions.User` and `Permissions.Users` are easy to confuse** (see the Permissions section above) — this is a backend naming choice, preserved as-is rather than silently renamed.
 
 ## Backend Contract Synchronization
 
-These contracts are high-impact: many frontend applications depend on them, so treat changes here like a platform API, not an app-local type.
+These contracts are high-impact: many frontend applications depend on them, so treat changes here like a platform API, not an app-local type. See [`docs/backend-contract-sync.md`](docs/backend-contract-sync.md) for the full contract-by-contract map (frontend location, backend location, search anchors, change-frequency classification) — the summary below is the short version.
 
 ```text
 Backend Building Block changes
