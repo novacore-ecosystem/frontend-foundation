@@ -5,10 +5,12 @@
  * tenant bootstrap contracts, translation resolution, date/number/
  * currency/phone/string utilities, and platform contracts mirroring the
  * backend's shared Building Blocks (API response envelope, pagination,
- * search criteria, error codes, validation patterns). See the README for
- * the full module list, backend-contract sync notes, and architectural
- * constraints (no React/Vue/Angular/UI-framework dependencies here —
- * those belong to future `@novacore/frontend-*` adapter packages).
+ * search criteria, error codes, validation patterns, permissions/
+ * authorization). See the README for the full module list, backend-
+ * contract sync notes (also `docs/backend-contract-sync.md`), and
+ * architectural constraints (no React/Vue/Angular/UI-framework
+ * dependencies here — those belong to future `@novacore/frontend-*`
+ * adapter packages).
  */
 
 export * from "./bootstrap";
@@ -20,3 +22,4 @@ export * from "./phone";
 export * from "./string";
 export * from "./api";
 export * from "./validation";
+export * from "./authorization";

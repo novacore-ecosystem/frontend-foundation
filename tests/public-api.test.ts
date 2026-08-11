@@ -10,14 +10,18 @@ import {
   formatDate,
   formatNumber,
   formatPhoneNumber,
+  hasAnyPermission,
+  hasPermission,
   isEmail,
   isSuccessResponse,
   isValidPhoneNumber,
   MessageCode,
   PAGINATION_DEFAULTS,
+  Permissions,
   relativeTime,
   slugify,
   type ApiResponse,
+  type CurrentUserAuthorization,
   type PaginatedResult,
   type TenantBootstrap,
 } from "../src/index";
@@ -87,5 +91,11 @@ describe("public package API", () => {
   it("exposes validation utilities backed by backend-mirrored patterns", () => {
     expect(isEmail("tan@example.com")).toBe(true);
     expect(isEmail("not-an-email")).toBe(false);
+  });
+
+  it("exposes authorization contracts (permissions + helpers) working together", () => {
+    const current: CurrentUserAuthorization = { roles: ["Admin"], permissions: [Permissions.Order.Full] };
+    expect(hasPermission(current.permissions, Permissions.Order.Delete)).toBe(true);
+    expect(hasAnyPermission(current.permissions, [Permissions.Inventory.View, Permissions.Order.View])).toBe(true);
   });
 });
