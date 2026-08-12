@@ -11,6 +11,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js"
+    },
+    "./realtime": {
+      "types": "./dist/realtime/index.d.ts",
+      "import": "./dist/realtime/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -42,6 +50,8 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "libphonenumber-js": "^1.13.10"
+    "libphonenumber-js": "^1.13.10",
+    "axios": "^1.7.9",
+    "@microsoft/signalr": "^8.0.7"
   }
 }

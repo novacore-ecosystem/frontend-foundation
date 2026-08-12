@@ -13,6 +13,7 @@ A small set of framework-independent contracts, algorithms, and utilities that a
 - Number and currency formatting
 - Phone number utilities
 - String utilities
+- Typed HTTP client (`src/http`) and typed realtime hub client (`src/realtime`) — Axios and SignalR are internal transports, never exposed to consumers
 
 **Platform contracts** — TypeScript mirrors of the backend's shared Building Blocks, so every frontend app shares one typed representation instead of redefining the same response envelope, pagination shape, search request, error codes, validation patterns, and permission keys:
 - API response envelope (`ApiResponse<T>`)
@@ -30,7 +31,7 @@ See [`docs/backend-contract-sync.md`](docs/backend-contract-sync.md) for exactly
 - **Not React, Vue, Angular, or Razor code.** No hooks, no composables, no services, no context/providers.
 - **Not an i18n framework.** It provides the resolution *logic*; wiring it into a specific framework's state/reactivity model is the job of a future adapter package.
 - **Not a permission/auth framework with framework bindings.** `hasPermission`/`hasAnyPermission`/`hasAllPermissions` are plain functions over a permissions array — there is no `usePermission()` hook, no Vue composable, no Angular service here. Those belong in a future `@novacore/frontend-react` (etc.) package that wraps this module's functions.
-- **Not an API SDK.** It does not wrap `fetch`/`axios`, does not know your services' base URLs, and does not contain a generic HTTP client. It only provides the typed shapes and (de)serialization helpers for the parts of the wire contract that are genuinely shared across every backend service.
+- **Not a business API SDK.** `src/http` provides a generic, typed HTTP client and `Endpoint` abstraction, but this package does not know your services' base URLs, endpoints, or response DTOs — those are declared by the consuming application (or a future generated API client) on top of `HttpClient`/`endpoint()`.
 - **Not a place for domain DTOs.** `UserDto`, `OrderDto`, `ProductDto`, `InventoryDto`, `PaymentDto`, `ShipmentDto`, and their domain-specific status enums (`OrderStatus`, `PaymentStatus`, ...) do not belong here — only cross-system contracts used by *every* service belong in this package. Domain DTOs belong to their own domain packages or a future generated API client.
 - **Not published yet.** This is an internal/private package (`"private": true` in `package.json`).
 
@@ -158,6 +159,99 @@ This module wraps [`libphonenumber-js`](https://www.npmjs.com/package/libphonenu
 ### String (`src/string`)
 
 `capitalize`, `camelCase`, `pascalCase`, `kebabCase`, `snakeCase`, `truncate`, `isBlank`, `isNullOrEmpty`, `toStringSafe`, `normalizeString`, `slugify`. All operate on Unicode code points (not UTF-16 code units) where it matters — e.g. `truncate` won't split an emoji's surrogate pair, and `slugify` strips diacritics via NFKD normalization rather than a fragile character map.
+
+### HTTP client (`src/http`)
+
+**Axios and SignalR are implementation details and must not be used directly by consuming applications.** `src/http` wraps Axios as its internal transport; nothing in this module's public exports references `AxiosRequestConfig`, `AxiosResponse`, or `AxiosError` — only NovaCore's own `HttpRequest`/`HttpResponse`/`HttpError` types. Import it from the package root or the `@novacore/frontend-foundation/http` subpath (so an app that only needs HTTP doesn't pull in the realtime module or vice versa).
+
+```ts
+import { createHttpClient, endpoint, HttpError } from "@novacore/frontend-foundation/http";
+
+const httpClient = createHttpClient({
+  baseUrl: "https://api.example.com",
+  timeout: 10_000,
+  tokenProvider: {
+    getAccessToken: () => localStorage.getItem("access_token"),
+    refreshAccessToken: async () => refreshViaYourAuthService(),
+  },
+  retry: { enabled: true, attempts: 3 },
+});
+
+// Low-level, ad-hoc calls:
+const product = await httpClient.get<Product>("/products/123");
+await httpClient.post("/orders", { items: [...] });
+
+// Typed, reusable endpoints — request/response types and HTTP config declared together:
+const getProduct = endpoint<{ id: string }, Product>({ method: "GET", path: "/products/:id" });
+const product2 = await httpClient.execute(getProduct, { id: "123" });
+// `:id` is interpolated into the path from the request object; any remaining
+// fields become query params (GET/HEAD/DELETE/OPTIONS) or the JSON body
+// (POST/PUT/PATCH).
+
+try {
+  await httpClient.get("/will-fail");
+} catch (error) {
+  if (error instanceof HttpError) {
+    // error.kind: "network" | "timeout" | "cancelled" | "api" | "unknown"
+    // error.status, error.code (backend MessageCode), error.validationErrors, error.requestId
+  }
+}
+
+// Cancellation uses the platform-standard AbortSignal, not an Axios CancelToken:
+const controller = new AbortController();
+httpClient.get("/slow", { signal: controller.signal });
+controller.abort();
+```
+
+- `HttpClientOptions` configures `baseUrl`, `timeout`, `headers`, `withCredentials`, `tokenProvider`, `retry`, and `interceptors` — one Axios instance is created per `HttpClient`, never per request.
+- `HttpInterceptor` (`onRequest`/`onResponse`/`onError`) is this package's own interception point; Axios's interceptor API is never exposed.
+- `TokenProvider.getAccessToken()` attaches `Authorization: Bearer <token>`; an optional `refreshAccessToken()` is called once on a `401` before the request is retried — this is the hook point for a future token-refresh flow, without coupling this module to any specific auth implementation.
+- Retry is off by default and, when enabled, only applies to safe/idempotent methods (`GET`/`HEAD`/`OPTIONS`) unless `retry.methods`/`retry.shouldRetry` says otherwise — mutations are never silently retried by default.
+- Server validation errors are normalized onto `HttpError.validationErrors` (`ValidationFieldError[]`, from `src/api/error`) whenever `ApiResponse.details` matches that shape — see that type's doc comment for the current backend-population caveat.
+
+### Realtime (`src/realtime`)
+
+Wraps `@microsoft/signalr` as the internal transport for a single hub connection; nothing in this module's public exports references `HubConnection`, `HubConnectionState`, or `HubConnectionBuilder`. Import it from the package root or the `@novacore/frontend-foundation/realtime` subpath.
+
+```ts
+import { createRealtimeClient, hub, RealtimeConnectionStates, RealtimeError } from "@novacore/frontend-foundation/realtime";
+
+const realtime = createRealtimeClient({
+  hubUrl: "https://api.example.com/hubs/notifications",
+  tokenProvider: { getAccessToken: () => localStorage.getItem("access_token") },
+  reconnect: { enabled: true }, // uses DEFAULT_RECONNECT_DELAYS_MS unless overridden
+});
+
+realtime.on("reconnecting", () => console.warn("reconnecting..."));
+await realtime.connect(); // safe to call repeatedly — never opens duplicate connections
+
+const unsubscribe = realtime.subscribe<{ orderId: string; status: string }>(
+  "OrderStatusChanged",
+  (payload) => console.log(payload.orderId, payload.status),
+);
+await realtime.invoke("SubscribeOrder", { orderId: "123" });
+
+unsubscribe();
+await realtime.disconnect(); // safe to call when already disconnected
+
+// Typed hub contracts — declare the shape once, get compile-time-checked
+// event/method names everywhere it's used (no business hubs ship in this
+// package; applications define their own, e.g.:
+const OrderHub = hub<
+  { OrderStatusChanged: { orderId: string; status: string } },
+  { SubscribeOrder: { request: { orderId: string }; response: void } }
+>({ name: "OrderHub" });
+
+const orderHub = realtime.forHub(OrderHub);
+orderHub.subscribe("OrderStatusChanged", (payload) => { /* payload is typed */ });
+await orderHub.invoke("SubscribeOrder", { orderId: "123" });
+```
+
+- `RealtimeConnectionStates` (`disconnected`/`connecting`/`connected`/`reconnecting`/`disconnecting`/`failed`) is this package's own normalized state, mapped from SignalR's `HubConnectionState` — read live via `realtime.state`.
+- `realtime.on(event, handler)` exposes normalized connection-lifecycle events (`connecting`/`connected`/`reconnecting`/`reconnected`/`disconnected`/`error`).
+- Errors thrown from `connect()`/`invoke()` are always `RealtimeError` (`kind`, `message`, `connectionState`), never a raw SignalR error.
+- `tokenProvider` reuses the same `TokenProvider` contract as `src/http`, so one auth source can back both HTTP and realtime.
+- `realtime.dispose()` disconnects and clears connection-lifecycle listeners; call the `unsubscribe` function returned by `subscribe()` to remove a per-event handler.
 
 ## Platform contracts
 
