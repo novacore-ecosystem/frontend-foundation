@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .wolf/
+.codegraph/
 
 *.log
 .DS_Store
