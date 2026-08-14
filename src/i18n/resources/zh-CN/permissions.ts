@@ -13,6 +13,7 @@ export const permissions = {
     audit: "审计",
     notification: "通知",
     users: "用户管理",
+    tenant: "租户",
     system: "系统",
   },
 } as const satisfies typeof enPermissions;

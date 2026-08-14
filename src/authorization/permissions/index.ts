@@ -100,6 +100,13 @@ export const Permissions = {
     Full: "users:full",
   },
 
+  Tenant: {
+    View: "tenant:view",
+    Manage: "tenant:manage",
+    RotateClient: "tenant:rotate-client",
+    Full: "tenant:full",
+  },
+
   System: {
     MessagingView: "system:messaging-view",
     MessagingRequeue: "system:messaging-requeue",
@@ -164,6 +171,10 @@ export const PERMISSION_VALUES: readonly Permission[] = [
   Permissions.Users.Manage,
   Permissions.Users.Reindex,
   Permissions.Users.Full,
+  Permissions.Tenant.View,
+  Permissions.Tenant.Manage,
+  Permissions.Tenant.RotateClient,
+  Permissions.Tenant.Full,
   Permissions.System.MessagingView,
   Permissions.System.MessagingRequeue,
   Permissions.System.Full,

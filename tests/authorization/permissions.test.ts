@@ -59,6 +59,12 @@ describe("Permissions contract — drift detection against backend Permissions.c
       Reindex: "users:reindex",
       Full: "users:full",
     });
+    expect(Permissions.Tenant).toEqual({
+      View: "tenant:view",
+      Manage: "tenant:manage",
+      RotateClient: "tenant:rotate-client",
+      Full: "tenant:full",
+    });
     expect(Permissions.System).toEqual({
       MessagingView: "system:messaging-view",
       MessagingRequeue: "system:messaging-requeue",
@@ -66,9 +72,9 @@ describe("Permissions contract — drift detection against backend Permissions.c
     });
   });
 
-  it("PERMISSION_VALUES has no duplicates and matches the backend's SupportedValues count (43 keys)", () => {
+  it("PERMISSION_VALUES has no duplicates and matches the backend's SupportedValues count (47 keys)", () => {
     expect(new Set(PERMISSION_VALUES).size).toBe(PERMISSION_VALUES.length);
-    expect(PERMISSION_VALUES.length).toBe(43);
+    expect(PERMISSION_VALUES.length).toBe(47);
   });
 
   it("every leaf value in Permissions appears in PERMISSION_VALUES (no orphaned constants)", () => {

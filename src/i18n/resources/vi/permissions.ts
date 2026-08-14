@@ -13,6 +13,7 @@ export const permissions = {
     audit: "Nhật ký kiểm tra",
     notification: "Thông báo",
     users: "Quản lý người dùng",
+    tenant: "Tenant",
     system: "Hệ thống",
   },
 } as const satisfies typeof enPermissions;

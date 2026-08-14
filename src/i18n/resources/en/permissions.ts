@@ -27,6 +27,7 @@ export const permissions = {
     audit: "Audit",
     notification: "Notifications",
     users: "User management",
+    tenant: "Tenants",
     system: "System",
   },
 };
