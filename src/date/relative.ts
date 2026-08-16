@@ -69,6 +69,9 @@ export function relativeTime(input: DateInput, options: RelativeTimeOptions = {}
   }
 
   const threshold = THRESHOLDS.find((entry) => absDiffMs < entry.maxAbsMs) ?? THRESHOLDS[THRESHOLDS.length - 1]!;
-  const value = Math.round(diffMs / threshold.divisor);
+  // Truncate, don't round: a person is "39" until they turn 40, not rounded to the
+  // nearest decade. 90 seconds must read "1 minute ago", not "2 minutes ago" — rounding
+  // (Math.round(1.5) === 2 in JS) would claim a threshold that hasn't been reached yet.
+  const value = Math.trunc(diffMs / threshold.divisor);
   return rtf.format(value, threshold.unit);
 }

@@ -23,6 +23,16 @@ describe("relativeTime", () => {
     expect(result).toBe("5 minutes ago");
   });
 
+  it("truncates instead of rounding up at the halfway point (90s is still '1 minute ago')", () => {
+    const result = relativeTime(agoMs(90_000), { locale: "en", now: NOW });
+    expect(result).toBe("1 minute ago");
+  });
+
+  it("truncates instead of rounding up at the halfway point (90min is still '1 hour ago')", () => {
+    const result = relativeTime(agoMs(90 * 60_000), { locale: "en", now: NOW });
+    expect(result).toBe("1 hour ago");
+  });
+
   it("formats hours", () => {
     const result = relativeTime(agoMs(60 * 60_000), { locale: "en", now: NOW });
     expect(result).toBe("1 hour ago");
