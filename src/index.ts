@@ -28,3 +28,6 @@ export * from "./authorization";
 export * from "./errors";
 export * from "./http";
 export * from "./realtime";
+export * from "./auth";
+export * from "./user";
+export * from "./notifications";

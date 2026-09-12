@@ -20,8 +20,12 @@ export const errors = {
   auth: {
     invalidCredentials: "凭据无效",
     tokenExpired: "您的会话已过期",
+    invalidToken: "会话已失效，请重新登录。",
+    insufficientPermissions: "您无权执行此操作",
     unauthorized: "您无权执行此操作",
     forbidden: "访问被拒绝",
+    accountLocked: "该账户已被锁定，请联系支持人员。",
+    accountDisabled: "该账户已被禁用。",
     sessionExpired: "会话已过期，请重新登录。",
   },
   user: {

@@ -22,6 +22,23 @@ describe("ERROR_DEFINITIONS / getErrorDefinition", () => {
     const codes = ERROR_DEFINITIONS.map((d) => d.code);
     expect(new Set(codes).size).toBe(codes.length);
   });
+
+  it("covers the full AuthN/AuthZ (300-399) range, per this module's own doc comment", () => {
+    const authCodes = [
+      MessageCode.InvalidCredentials,
+      MessageCode.TokenExpired,
+      MessageCode.InvalidToken,
+      MessageCode.InsufficientPermissions,
+      MessageCode.Unauthorized,
+      MessageCode.Forbidden,
+      MessageCode.AccountLocked,
+      MessageCode.AccountDisabled,
+      MessageCode.SessionExpired,
+    ];
+    for (const code of authCodes) {
+      expect(getErrorDefinition(code)).toBeDefined();
+    }
+  });
 });
 
 describe("translateError", () => {
@@ -44,6 +61,21 @@ describe("translateError", () => {
       { locale: "zh-CN" },
     );
     expect(message).toBe("未找到订单");
+  });
+
+  it("resolves the newly completed AuthN/AuthZ codes (account locked/disabled, invalid token, insufficient permissions)", () => {
+    expect(translateError({ messageCode: MessageCode.AccountLocked, message: "" })).toBe(
+      "This account has been locked. Please contact support.",
+    );
+    expect(translateError({ messageCode: MessageCode.AccountDisabled, message: "" }, { locale: "vi" })).toBe(
+      "Tài khoản này đã bị vô hiệu hóa.",
+    );
+    expect(translateError({ messageCode: MessageCode.InvalidToken, message: "" }, { locale: "zh-CN" })).toBe(
+      "会话已失效，请重新登录。",
+    );
+    expect(translateError({ messageCode: MessageCode.InsufficientPermissions, message: "" })).toBe(
+      "You don't have permission to perform this action",
+    );
   });
 
   it("applies a tenant override for a known code", () => {

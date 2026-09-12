@@ -20,8 +20,12 @@ export const errors = {
   auth: {
     invalidCredentials: "Thông tin đăng nhập không hợp lệ",
     tokenExpired: "Phiên đăng nhập của bạn đã hết hạn",
+    invalidToken: "Phiên đăng nhập không còn hợp lệ. Vui lòng đăng nhập lại.",
+    insufficientPermissions: "Bạn không có quyền thực hiện hành động này",
     unauthorized: "Bạn không có quyền thực hiện hành động này",
     forbidden: "Truy cập bị từ chối",
+    accountLocked: "Tài khoản này đã bị khóa. Vui lòng liên hệ hỗ trợ.",
+    accountDisabled: "Tài khoản này đã bị vô hiệu hóa.",
     sessionExpired: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   },
   user: {

@@ -7,6 +7,12 @@
  * Product, Order, Inventory, Payment, Shipping) to demonstrate the
  * pattern end to end.
  *
+ * `auth.invalidToken`/`insufficientPermissions`/`accountLocked`/
+ * `accountDisabled` were added alongside the new `src/auth`/`src/user`
+ * endpoint definitions to actually complete the AuthN/AuthZ range this
+ * comment already claimed — a login/refresh-token flow is exactly where
+ * a caller hits these codes.
+ *
  * The remaining ~70 domain-specific `MessageCode` values (e.g.
  * `ProductOutOfStock`, `CouponUsageLimitReached`) are intentionally NOT
  * translated here — per this package's domain boundary (see
@@ -37,8 +43,12 @@ export const errors = {
   auth: {
     invalidCredentials: "Invalid credentials",
     tokenExpired: "Your session has expired",
+    invalidToken: "Your session is no longer valid. Please log in again.",
+    insufficientPermissions: "You don't have permission to perform this action",
     unauthorized: "You are not authorized to perform this action",
     forbidden: "Access is forbidden",
+    accountLocked: "This account has been locked. Please contact support.",
+    accountDisabled: "This account has been disabled.",
     sessionExpired: "Your session has expired. Please log in again.",
   },
   user: {
