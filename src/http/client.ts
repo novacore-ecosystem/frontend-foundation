@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type AxiosInstance, type AxiosRequestConfig } from "axios";
 import type { ApiResponse } from "../api/response";
+import { isErrorResponse } from "../api/response";
 import type { ValidationFieldError } from "../api/error";
 import {
   DEFAULT_HTTP_TIMEOUT_MS,
@@ -240,7 +241,22 @@ export class HttpClient {
     return this.request<T>({ method: HttpMethods.Options, path, ...options }).then((response) => response.data);
   }
 
-  /** Executes an {@link EndpointDefinition}. Request keys matching `:name` tokens in the endpoint's path become route params; the rest become query params (`GET`/`HEAD`/`DELETE`/`OPTIONS`) or the JSON body (`POST`/`PUT`/`PATCH`). */
+  /**
+   * Executes an {@link EndpointDefinition}. Request keys matching `:name` tokens in the
+   * endpoint's path become route params; the rest become query params (`GET`/`HEAD`/`DELETE`/
+   * `OPTIONS`) or the JSON body (`POST`/`PUT`/`PATCH`).
+   *
+   * Every backend service wraps its responses in the `ApiResponse<T>` envelope (`../api/response`)
+   * — `success`/`message`/`messageCode`/`data` — never the bare `T` an `EndpointDefinition`'s
+   * `TResponse` describes. This method is the one place that envelope is unwrapped: on
+   * `success: false` (which the backend can send on an HTTP 200, not just a non-2xx status — see
+   * `ApiResponse`'s own doc comment) it throws an {@link HttpError} carrying the envelope's
+   * `message`/`messageCode`/`details`, exactly like every consuming application's own
+   * hand-rolled `unwrapApiResponse` helper already did; otherwise it returns `envelope.data`.
+   * The plain `get`/`post`/`put`/... convenience methods above intentionally do NOT do this —
+   * they return the raw Axios body, for callers that need the envelope itself or that talk to a
+   * non-`ApiResponse` endpoint.
+   */
   async execute<TRequest = void, TResponse = unknown>(
     def: EndpointDefinition<TRequest, TResponse>,
     request?: TRequest,
@@ -249,7 +265,7 @@ export class HttpClient {
     const { path, remaining } = resolveEndpointPath(def.path, request as Record<string, unknown> | undefined);
     const hasBody = BODY_METHODS.has(def.method);
 
-    const response = await this.request<TResponse>({
+    const response = await this.request<ApiResponse<TResponse>>({
       method: def.method,
       path,
       query: hasBody ? options?.query : { ...remaining, ...options?.query } as Record<string, HttpQueryValue>,
@@ -259,7 +275,18 @@ export class HttpClient {
       signal: options?.signal,
     });
 
-    return response.data;
+    const envelope = response.data;
+    if (isErrorResponse(envelope)) {
+      throw new HttpError({
+        kind: HttpErrorKinds.Api,
+        status: response.status,
+        message: envelope.message,
+        code: envelope.messageCode ?? undefined,
+        details: envelope.details,
+      });
+    }
+
+    return envelope.data as TResponse;
   }
 }
 
