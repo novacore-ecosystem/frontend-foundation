@@ -27,6 +27,9 @@ export const errors = {
     accountLocked: "该账户已被锁定，请联系支持人员。",
     accountDisabled: "该账户已被禁用。",
     sessionExpired: "会话已过期，请重新登录。",
+    emailNotVerified: "请先确认您的邮箱后再登录。",
+    emailResendCooldown: "请稍候再请求重新发送邮件。",
+    verificationCodeLocked: "无效尝试次数过多，请稍后再试。",
   },
   user: {
     notFound: "未找到用户",

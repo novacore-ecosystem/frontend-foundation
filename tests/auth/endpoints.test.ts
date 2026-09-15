@@ -32,4 +32,9 @@ describe("AuthEndpoints", () => {
     expect(AuthEndpoints.register.method).toBe(HttpMethods.Post);
     expect(AuthEndpoints.register.path).toBe("/auth/register");
   });
+
+  it("declares confirmEmail as POST /auth/confirm-email", () => {
+    expect(AuthEndpoints.confirmEmail.method).toBe(HttpMethods.Post);
+    expect(AuthEndpoints.confirmEmail.path).toBe("/auth/confirm-email");
+  });
 });

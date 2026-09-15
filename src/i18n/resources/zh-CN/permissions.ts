@@ -14,6 +14,8 @@ export const permissions = {
     notification: "通知",
     users: "用户管理",
     tenant: "租户",
+    app: "应用",
+    "registration-defaults": "注册默认设置",
     system: "系统",
   },
 } as const satisfies typeof enPermissions;

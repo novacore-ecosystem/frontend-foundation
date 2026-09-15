@@ -6,6 +6,18 @@ All notable changes to this package will be documented in this file.
 
 Initial implementation of the framework-agnostic foundation layer. Not yet published.
 
+### Added (2026-09-15 — Auth service email-confirmation/registration-defaults audit)
+
+- `src/registration-defaults`: `RegistrationDefaultsEndpoints` (`get`/`replacePermissions`/`replaceRoles`) and types, mirroring the Auth service's new per-`(Tenant, App)` Default Role/Default Permission module (`Auth.API/Endpoints/Registrations/*.cs`). `Permissions.RegistrationDefaults` (`{ View, Manage }`) added to the permission catalog.
+- `AuthEndpoints.confirmEmail` — the token-based email-verification completion endpoint (`POST /auth/confirm-email`).
+- `MessageCode.EmailResendCooldown` ("206") and `MessageCode.VerificationCodeLocked` ("207"), with matching `ErrorDefinition`s and `errors.auth.*` translations in all three locales.
+
+### Fixed (2026-09-15 — same audit)
+
+- **Breaking**: `AuthSession` no longer assumes a bearer `accessToken` — the real Auth service issues no token in any response body (HTTP-only cookies only). It's now `{ user: UserProfile }`, populated by fetching the current user right after login/refresh. `AuthEndpoints.login/logout/refreshToken/register`'s request/response shapes were all reconciled against the real backend (see `src/auth/types.ts`'s module doc comment); `register`'s response is now `void` (no id/email, no tokens).
+- `UserEndpoints.changePassword`/`resetPassword` pointed at the wrong paths (`/profiles/current/change-password`, `/auth/reset-password` — colliding with each other's actual real paths). Fixed to `/auth/reset-password` (authenticated, current-password based) and `/auth/reset-password/complete` (anonymous, token based) respectively.
+- `HttpClient.execute()` returned the raw `ApiResponse<T>` envelope instead of unwrapping it, silently breaking every one of its consumers (`useAuth`/`useUserProfile`/`useNotifications` in `@novacore/frontend-next-shadcn`) against a real backend. Now unwraps via `isErrorResponse`, throwing `HttpError` on `success: false` even on an HTTP 200 — see `docs/backend-contract-sync.md`'s "Known gaps" for the full writeup.
+
 ### Added
 
 - Tenant bootstrap contract (`TenantBootstrap` and related types) plus `createTranslatorFromBootstrap` and `isFeatureEnabled` helpers.

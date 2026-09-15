@@ -28,6 +28,8 @@ export const permissions = {
     notification: "Notifications",
     users: "User management",
     tenant: "Tenants",
+    app: "Applications",
+    "registration-defaults": "Registration defaults",
     system: "System",
   },
 };

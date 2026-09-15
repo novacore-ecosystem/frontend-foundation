@@ -1,32 +1,34 @@
 import { endpoint } from "../http/endpoint";
 import { HttpMethods } from "../http/types";
 import type {
+  ConfirmEmailRequest,
   ForgotPasswordRequest,
   LoginRequest,
-  LoginResponse,
-  LogoutRequest,
-  RefreshTokenRequest,
-  RefreshTokenResponse,
   RegisterRequest,
-  RegisterResponse,
   ResendEmailRequest,
 } from "./types";
 
 /**
- * Typed `EndpointDefinition`s for the platform's authentication flows —
- * declared once via `endpoint()` (`../http/endpoint`) so every consuming
- * application executes them the same way (`httpClient.execute(AuthEndpoints.login, request)`)
- * instead of hand-writing `axios.post("/auth/login", ...)` per app. See
- * `./types`'s doc comment for the "forward-looking, not yet
- * backend-audited" caveat on the paths below — adjust them here, once,
- * when the real Auth service is confirmed, rather than in every
- * consuming application's own hand-rolled client.
+ * Typed `EndpointDefinition`s for the platform's authentication flows — declared once via
+ * `endpoint()` (`../http/endpoint`) so every consuming application executes them the same way
+ * (`httpClient.execute(AuthEndpoints.login, request)`) instead of hand-writing
+ * `axios.post("/auth/login", ...)` per app.
+ *
+ * Every response type below is `void` — the backend either sets HTTP-only cookies (`login`,
+ * `refreshToken`) or simply confirms the action with no meaningful payload (`register`,
+ * `confirmEmail`, `forgotPassword`, `resendEmail`, `logout`). See `./types`'s module doc comment
+ * for the "backend-confirmed 2026-09-15" audit this reflects.
  */
 export const AuthEndpoints = {
-  login: endpoint<LoginRequest, LoginResponse>({ method: HttpMethods.Post, path: "/auth/login" }),
-  logout: endpoint<LogoutRequest, void>({ method: HttpMethods.Post, path: "/auth/logout" }),
-  refreshToken: endpoint<RefreshTokenRequest, RefreshTokenResponse>({ method: HttpMethods.Post, path: "/auth/refresh-token" }),
+  login: endpoint<LoginRequest, void>({ method: HttpMethods.Post, path: "/auth/login" }),
+  /** No request body — the refresh token is sent automatically via its HTTP-only cookie; the `X-App-Key` header (see `./types` module doc comment) is still required. */
+  logout: endpoint<void, void>({ method: HttpMethods.Post, path: "/auth/logout" }),
+  /** No request body — same cookie-carried refresh token as `logout`. */
+  refreshToken: endpoint<void, void>({ method: HttpMethods.Post, path: "/auth/refresh-token" }),
   forgotPassword: endpoint<ForgotPasswordRequest, void>({ method: HttpMethods.Post, path: "/auth/forgot-password" }),
   resendEmail: endpoint<ResendEmailRequest, void>({ method: HttpMethods.Post, path: "/auth/resend-email" }),
-  register: endpoint<RegisterRequest, RegisterResponse>({ method: HttpMethods.Post, path: "/auth/register" }),
+  /** Creates the account with its email unconfirmed and dispatches a verification email — issues no tokens, see `./types` module doc comment. */
+  register: endpoint<RegisterRequest, void>({ method: HttpMethods.Post, path: "/auth/register" }),
+  /** Completes the token-based email-verification link (`AuthEndpoints.resendEmail`/`Register`'s dispatched email). */
+  confirmEmail: endpoint<ConfirmEmailRequest, void>({ method: HttpMethods.Post, path: "/auth/confirm-email" }),
 } as const;

@@ -50,6 +50,9 @@ export const errors = {
     accountLocked: "This account has been locked. Please contact support.",
     accountDisabled: "This account has been disabled.",
     sessionExpired: "Your session has expired. Please log in again.",
+    emailNotVerified: "Please confirm your email before logging in.",
+    emailResendCooldown: "Please wait before requesting another email.",
+    verificationCodeLocked: "Too many invalid attempts. Please try again later.",
   },
   user: {
     notFound: "User not found",

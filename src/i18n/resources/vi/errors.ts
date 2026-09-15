@@ -27,6 +27,9 @@ export const errors = {
     accountLocked: "Tài khoản này đã bị khóa. Vui lòng liên hệ hỗ trợ.",
     accountDisabled: "Tài khoản này đã bị vô hiệu hóa.",
     sessionExpired: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    emailNotVerified: "Vui lòng xác nhận email trước khi đăng nhập.",
+    emailResendCooldown: "Vui lòng đợi trước khi yêu cầu gửi lại email.",
+    verificationCodeLocked: "Quá nhiều lần thử không hợp lệ. Vui lòng thử lại sau.",
   },
   user: {
     notFound: "Không tìm thấy người dùng",

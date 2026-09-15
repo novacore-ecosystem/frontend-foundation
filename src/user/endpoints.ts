@@ -10,13 +10,17 @@ import type {
 } from "./types";
 
 /**
- * Typed `EndpointDefinition`s for the current user's own profile. See
- * `./types`'s doc comment for the backend-audit status of each path —
- * `getEffectivePermissions` is the one confirmed entry here (mirrors
- * `GET /profiles/current/detail`, already cited by
- * `CurrentUserAuthorization`'s own doc comment); the rest are
- * forward-looking, reconcile against the real Profile/User service when
- * it's audited.
+ * Typed `EndpointDefinition`s for the current user's own profile. `getEffectivePermissions`
+ * mirrors the backend-confirmed `GET /profiles/current/detail` (see `CurrentUserAuthorization`'s
+ * doc comment, `../authorization/types`). `changePassword`/`resetPassword` are backend-confirmed
+ * as of the 2026-09-15 Auth-service audit (`../auth/types`'s module doc comment) — both actually
+ * live under the Auth service's own `/auth` prefix, not `/profiles/current/*` as originally
+ * (incorrectly) guessed: `changePassword` is `Auth.API`'s authenticated `POST /reset-password`
+ * (`ResetPasswordRequest(CurrentPassword, NewPassword)`, revokes every other session on success),
+ * `resetPassword` is the anonymous token-based `POST /reset-password/complete`
+ * (`ResetPasswordWithTokenRequest(Token, NewPassword)`, completes `AuthEndpoints.forgotPassword`'s
+ * emailed link). `getMe`/`getById`/`updateProfile` remain forward-looking — reconcile against the
+ * real Profile/User service when audited.
  */
 export const UserEndpoints = {
   getMe: endpoint<void, UserProfile>({ method: HttpMethods.Get, path: "/profiles/current" }),
@@ -27,9 +31,11 @@ export const UserEndpoints = {
     path: "/profiles/current/detail",
   }),
   updateProfile: endpoint<UpdateProfileRequest, UserProfile>({ method: HttpMethods.Patch, path: "/profiles/current" }),
+  /** Requires the current password; revokes every other active session on success (`Auth.API`'s `POST /reset-password`). */
   changePassword: endpoint<ChangePasswordRequest, void>({
     method: HttpMethods.Post,
-    path: "/profiles/current/change-password",
+    path: "/auth/reset-password",
   }),
-  resetPassword: endpoint<ResetPasswordRequest, void>({ method: HttpMethods.Post, path: "/auth/reset-password" }),
+  /** Completes a `AuthEndpoints.forgotPassword` email link via its single-use token (`Auth.API`'s `POST /reset-password/complete`). */
+  resetPassword: endpoint<ResetPasswordRequest, void>({ method: HttpMethods.Post, path: "/auth/reset-password/complete" }),
 } as const;

@@ -59,6 +59,8 @@ export const MessageCode = {
   UnprocessableEntity: "203",
   TooManyRequests: "204",
   RequestTimeout: "205",
+  EmailResendCooldown: "206",
+  VerificationCodeLocked: "207",
 
   // Authentication & authorization (300-399)
   InvalidCredentials: "300",

@@ -26,13 +26,13 @@ describe("UserEndpoints", () => {
     expect(UserEndpoints.updateProfile.path).toBe("/profiles/current");
   });
 
-  it("declares changePassword as POST /profiles/current/change-password", () => {
+  it("declares changePassword as POST /auth/reset-password (authenticated, current-password based)", () => {
     expect(UserEndpoints.changePassword.method).toBe(HttpMethods.Post);
-    expect(UserEndpoints.changePassword.path).toBe("/profiles/current/change-password");
+    expect(UserEndpoints.changePassword.path).toBe("/auth/reset-password");
   });
 
-  it("declares resetPassword as POST /auth/reset-password", () => {
+  it("declares resetPassword as POST /auth/reset-password/complete (anonymous, token based)", () => {
     expect(UserEndpoints.resetPassword.method).toBe(HttpMethods.Post);
-    expect(UserEndpoints.resetPassword.path).toBe("/auth/reset-password");
+    expect(UserEndpoints.resetPassword.path).toBe("/auth/reset-password/complete");
   });
 });

@@ -1,74 +1,81 @@
 /**
- * Request/response contracts for the platform's authentication flows
- * (login, logout, token refresh, forgot-password, resend-email,
- * register). Every NovaCore admin application needs these identically —
- * unlike `OrderDto`/`ProductStatus`-style business data (explicitly out
- * of scope for this package, see the root `CLAUDE.md`), authentication
- * is cross-cutting session/identity infrastructure in the same category
- * as `TenantBootstrap` (`../bootstrap`) and `CurrentUserAuthorization`
+ * Request/response contracts for the platform's authentication flows (login, logout, token
+ * refresh, register, email confirmation, resend-email, forgot-password) — cross-cutting
+ * session/identity infrastructure every NovaCore admin application needs identically, in the
+ * same category as `TenantBootstrap` (`../bootstrap`) and `CurrentUserAuthorization`
  * (`../authorization`), both already modeled here.
  *
- * **Forward-looking design, not yet backend-audited**: unlike most of
- * this package's contracts, no confirmed backend source file exists for
- * these shapes at the time of writing (only `CurrentUserAuthorization`'s
- * `GET /profiles/current/detail` and `CursorPaginatedResult`'s
- * `GET /notifications/mine` are backend-confirmed — see those types'
- * doc comments and `docs/backend-contract-sync.md`). This mirrors the
- * precedent set by `@novacore/frontend-next-shadcn`'s `Position` domain
- * (see that package's `docs/access-control.md`): a clean, reasonable
- * shape a consuming application's `HttpClient`/token-provider wiring can
- * target today, to be reconciled with the real Auth service's actual
- * request/response fields (and endpoint paths, see `./endpoints`) once
- * audited. Do not treat the paths/fields here as confirmed contracts the
- * way e.g. `PaginatedResult` is.
+ * **Backend-confirmed** (unlike the "forward-looking" design this module started as): audited
+ * directly against `Auth.API/Endpoints/Authentication/*.cs` in `core-backend` on 2026-09-15,
+ * the day the Auth service shipped its email-confirmation/registration-defaults/session work
+ * (`docs/backend-contract-sync.md` — search anchors: `LoginHandler`, `RegisterHandler`,
+ * `ConfirmEmailHandler`, `ResendEmailHandler`, `ForgotPasswordHandler`).
+ *
+ * **The backend issues no bearer token in any response body.** `Login`/`RefreshToken` set
+ * `AccessToken`/`RefreshToken` as HTTP-only cookies and return an empty `ApiResponse<object>` —
+ * the browser holds the session, JavaScript never sees the token. `AuthSession` below reflects
+ * that: it is populated by fetching the current user (`UserEndpoints.getMe`) right after a
+ * successful login/refresh, not by anything the login call itself returns. See
+ * `@novacore/frontend-next-shadcn`'s `useAuth` for the hook that wires this together.
+ *
+ * `X-Tenant-Client-Key` (required on every `login`) and `X-App-Key` (required on `login`/
+ * `register`/`refreshToken` for every account except the singleton Root, which bypasses App
+ * resolution entirely) are **not** part of any request body below — the backend reads them as
+ * headers (`HeaderKeyConstant.TenantClientKey`/`AppKey`). Configure them once as default headers
+ * on the `HttpClient` instance (`HttpClientOptions.headers`), the same way every other
+ * per-deployment constant (base URL, timeout) is configured — not threaded through every call.
  */
 
-/** Credential pair for `AuthEndpoints.login`. `usernameOrEmail` accepts either — the real Auth service's actual accepted identifier(s) should be confirmed when this is audited (see module doc comment). */
+/** Body of `AuthEndpoints.login` — headers carry tenant/app resolution, see module doc comment. */
 export interface LoginRequest {
-  usernameOrEmail: string;
+  email: string;
   password: string;
 }
 
-/** The session issued on successful login/refresh. `refreshToken`/`expiresAt` are optional since not every backend issues a separate refresh token or a machine-readable expiry. */
+/**
+ * The session established after a successful `login`/`refreshToken` — just the current user,
+ * fetched separately since the backend's own response carries no session data (see module doc
+ * comment). `null` when signed out. Not a token pair — there is no client-visible token.
+ */
 export interface AuthSession {
-  accessToken: string;
-  refreshToken?: string;
-  /** ISO 8601 timestamp the access token expires at, if the backend provides one. */
-  expiresAt?: string;
+  user: import("../user/types").UserProfile;
 }
 
-export type LoginResponse = AuthSession;
-
-/** `refreshToken` omitted when the caller relies on a same-origin cookie-based refresh token instead of one held client-side. */
-export interface RefreshTokenRequest {
-  refreshToken?: string;
-}
-
-export type RefreshTokenResponse = AuthSession;
-
-/** `refreshToken` omitted for a client that only ever holds an access token in memory (nothing to revoke server-side beyond the current bearer token). */
-export interface LogoutRequest {
-  refreshToken?: string;
-}
-
+/** Body of `AuthEndpoints.forgotPassword`. Always resolves the same way whether or not the email exists (anti-enumeration) — never treat the response as confirmation the account exists. */
 export interface ForgotPasswordRequest {
   email: string;
 }
 
-/** Re-sends a pending account email (e.g. email verification) — kept generic via `purpose` rather than one endpoint per email type, since the backend most likely exposes a single resend action keyed by intent. */
+/**
+ * Body of `AuthEndpoints.resendEmail`. `purpose` mirrors the backend's `AuthMailPurpose` enum
+ * verbatim (`Auth.Application/Abstractions/Auth/AuthMailPurpose.cs`) — parsed case-insensitively
+ * server-side, but sent with this exact casing to match the enum member names. Cooldown is 30
+ * seconds per `(purpose, email)`; a request inside the window fails with
+ * `MessageCode.EmailResendCooldown` (`"206"`), whose `ApiResponse.details` carries
+ * `{ remainingSeconds }`.
+ */
 export interface ResendEmailRequest {
   email: string;
-  purpose?: "verifyEmail" | "confirmAccount";
+  purpose: "EmailVerification" | "PasswordReset";
 }
 
+/** Body of `AuthEndpoints.register`. Field names mirror `RegisterRequest` (`Auth.API`) exactly. `middleName` is genuinely optional on the wire (defaults to `""` server-side). */
 export interface RegisterRequest {
   email: string;
   password: string;
-  displayName?: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  middleName?: string;
 }
 
-/** Minimal — most backends require email verification before a register call also returns a usable session, so this deliberately does not extend `AuthSession`. */
-export interface RegisterResponse {
-  id: string;
-  email: string;
+/**
+ * Body of `AuthEndpoints.confirmEmail` — completes the token-based email-verification link.
+ * `accountId` is the `Guid` the link was issued for (sent as a plain string on the wire).
+ * Repeated invalid attempts against the same `accountId` lock out for 3 minutes after the 3rd
+ * failure (`MessageCode.VerificationCodeLocked`, `"207"`, `details: { remainingSeconds }`).
+ */
+export interface ConfirmEmailRequest {
+  accountId: string;
+  token: string;
 }

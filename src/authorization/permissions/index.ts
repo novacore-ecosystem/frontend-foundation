@@ -107,6 +107,21 @@ export const Permissions = {
     Full: "tenant:full",
   },
 
+  App: {
+    View: "app:view",
+    Manage: "app:manage",
+    AssignUsers: "app:assign-users",
+  },
+
+  /** Default Role/Default Permission configuration granted to every Account that
+   * self-registers into a given (Tenant, App) pair — see `../../registration-defaults`
+   * and the backend's own `RegistrationDefaults` doc comment
+   * (`Permissions.Auth.cs`). */
+  RegistrationDefaults: {
+    View: "registration-defaults:view",
+    Manage: "registration-defaults:manage",
+  },
+
   System: {
     MessagingView: "system:messaging-view",
     MessagingRequeue: "system:messaging-requeue",
@@ -175,6 +190,11 @@ export const PERMISSION_VALUES: readonly Permission[] = [
   Permissions.Tenant.Manage,
   Permissions.Tenant.RotateClient,
   Permissions.Tenant.Full,
+  Permissions.App.View,
+  Permissions.App.Manage,
+  Permissions.App.AssignUsers,
+  Permissions.RegistrationDefaults.View,
+  Permissions.RegistrationDefaults.Manage,
   Permissions.System.MessagingView,
   Permissions.System.MessagingRequeue,
   Permissions.System.Full,

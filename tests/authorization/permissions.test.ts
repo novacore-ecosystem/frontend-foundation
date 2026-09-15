@@ -65,6 +65,15 @@ describe("Permissions contract — drift detection against backend Permissions.c
       RotateClient: "tenant:rotate-client",
       Full: "tenant:full",
     });
+    expect(Permissions.App).toEqual({
+      View: "app:view",
+      Manage: "app:manage",
+      AssignUsers: "app:assign-users",
+    });
+    expect(Permissions.RegistrationDefaults).toEqual({
+      View: "registration-defaults:view",
+      Manage: "registration-defaults:manage",
+    });
     expect(Permissions.System).toEqual({
       MessagingView: "system:messaging-view",
       MessagingRequeue: "system:messaging-requeue",
@@ -72,9 +81,9 @@ describe("Permissions contract — drift detection against backend Permissions.c
     });
   });
 
-  it("PERMISSION_VALUES has no duplicates and matches the backend's SupportedValues count (47 keys)", () => {
+  it("PERMISSION_VALUES has no duplicates and matches the backend's SupportedValues count (52 keys)", () => {
     expect(new Set(PERMISSION_VALUES).size).toBe(PERMISSION_VALUES.length);
-    expect(PERMISSION_VALUES.length).toBe(47);
+    expect(PERMISSION_VALUES.length).toBe(52);
   });
 
   it("every leaf value in Permissions appears in PERMISSION_VALUES (no orphaned constants)", () => {
@@ -91,8 +100,10 @@ describe("Permissions contract — drift detection against backend Permissions.c
   });
 
   it("every permission key follows the module:action wire format", () => {
+    // Module segment allows internal hyphens too (e.g. "registration-defaults:view") —
+    // the backend's own PermissionGroup names aren't restricted to a single word.
     for (const value of PERMISSION_VALUES) {
-      expect(value).toMatch(/^[a-z]+:[a-z-]+$/);
+      expect(value).toMatch(/^[a-z][a-z-]*:[a-z-]+$/);
     }
   });
 });

@@ -31,3 +31,4 @@ export * from "./realtime";
 export * from "./auth";
 export * from "./user";
 export * from "./notifications";
+export * from "./registration-defaults";

@@ -14,6 +14,8 @@ export const permissions = {
     notification: "Thông báo",
     users: "Quản lý người dùng",
     tenant: "Tenant",
+    app: "Ứng dụng",
+    "registration-defaults": "Mặc định đăng ký",
     system: "Hệ thống",
   },
 } as const satisfies typeof enPermissions;
