@@ -5,8 +5,12 @@ export type {
   BootstrapSettings,
   FeatureFlags,
   BootstrapMetadata,
+  EffectiveTranslation,
+  TenantBootstrapInfo,
+  TenantBootstrapResponse,
 } from "./types";
 export { isFeatureEnabled, createTranslatorFromBootstrap, resolveTenantLocale } from "./helpers";
-export type { BootstrapStorage } from "./storage";
+export type { BootstrapStorage, VersionedBootstrap } from "./storage";
 export type { BootstrapRefreshListener, BootstrapRefreshOptions } from "./refresh";
 export { BootstrapRefreshCoordinator, createBootstrapRefreshCoordinator } from "./refresh";
+export { BootstrapEndpoints } from "./endpoints";

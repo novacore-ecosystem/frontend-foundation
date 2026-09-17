@@ -64,3 +64,36 @@ export interface TenantBootstrap {
   /** Free-form metadata not covered by the fields above. */
   metadata?: BootstrapMetadata;
 }
+
+/** One language's effective (tenant override merged over the fallback) translation payload — see `TenantBootstrapResponse.translations`. */
+export interface EffectiveTranslation {
+  configuration: Record<string, unknown>;
+  dictionary: Record<string, unknown>;
+}
+
+/** Identifying/branding fields for the tenant a `TenantBootstrapResponse` was built for. */
+export interface TenantBootstrapInfo {
+  id: string;
+  code: string;
+  name: string;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
+}
+
+/**
+ * The exact wire shape of Auth's `GET /bootstrap` (`Auth.API/Endpoints/Tenants/GetTenantBootstrap.cs`,
+ * `TenantBootstrapResponse` in `Auth.Application`) — see `BootstrapEndpoints.get` (`./endpoints`).
+ * Deliberately separate from {@link TenantBootstrap} above: that type is a generic, framework-level
+ * contract with a single resolved `locale`, while this endpoint returns every supported language's
+ * translations at once (pre-authentication, before a session-specific locale is known) plus
+ * branding fields `TenantBootstrap`'s deliberately-generic `TenantIdentity` doesn't model. Consume
+ * this type directly — `BootstrapStorage`/`BootstrapRefreshCoordinator` (`./storage`, `./refresh`)
+ * are generic over any `{ version: number }` shape, so there is no requirement to map one into the
+ * other.
+ */
+export interface TenantBootstrapResponse {
+  version: number;
+  tenant: TenantBootstrapInfo;
+  supportedLanguages: string[];
+  translations: Record<string, EffectiveTranslation>;
+}
