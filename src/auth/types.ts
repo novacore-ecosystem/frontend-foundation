@@ -33,6 +33,17 @@ export interface LoginRequest {
 }
 
 /**
+ * Response of `AuthEndpoints.login`/`AuthEndpoints.refreshToken` — no tokens (those are
+ * cookie-only, see module doc comment), just the tenant's current Bootstrap Version as of this
+ * login/refresh (`null` for the Root client, which has no tenant). Lets a caller compare against
+ * its own locally-cached `TenantBootstrap.version` (`../bootstrap`) immediately, without waiting
+ * on a SignalR round trip - see `refreshBootstrap` (`../bootstrap/refresh`).
+ */
+export interface BootstrapVersionResponse {
+  version: number | null;
+}
+
+/**
  * The session established after a successful `login`/`refreshToken` — just the current user,
  * fetched separately since the backend's own response carries no session data (see module doc
  * comment). `null` when signed out. Not a token pair — there is no client-visible token.

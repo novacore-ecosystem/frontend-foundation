@@ -36,6 +36,13 @@ export type BootstrapMetadata = Record<string, unknown>;
  * generic shape.
  */
 export interface TenantBootstrap {
+  /**
+   * The tenant's Bootstrap Version this payload was built from — the single source of truth
+   * for "is my local copy still current." Compared against a server-pushed/returned version
+   * (SignalR's `BootstrapVersionChanged`, or the `version` field on a login/refresh response)
+   * to decide whether a refetch is needed; see `refreshBootstrap` in `./refresh`.
+   */
+  version: number;
   /** The tenant this bootstrap payload belongs to. */
   tenant: TenantIdentity;
   /** BCP 47 locale tag active for this session (e.g. `"en-US"`, `"vi-VN"`). */

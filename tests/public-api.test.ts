@@ -55,6 +55,7 @@ describe("public package API", () => {
 
   it("exposes i18n and tenant bootstrap contracts working together", () => {
     const bootstrap: TenantBootstrap = {
+      version: 1,
       tenant: { id: "t1" },
       locale: "en",
       translations: { application: { "welcome.message": "Hello, {{name}}" } },
@@ -109,7 +110,7 @@ describe("public package API", () => {
     expect(isSupportedLocale("vi")).toBe(true);
     expect(normalizeLocale("en-US")).toBe("en");
 
-    const bootstrap: TenantBootstrap = { tenant: { id: "t1" }, locale: "en-US" };
+    const bootstrap: TenantBootstrap = { version: 1, tenant: { id: "t1" }, locale: "en-US" };
     expect(resolveTenantLocale(bootstrap)).toBe("en");
   });
 

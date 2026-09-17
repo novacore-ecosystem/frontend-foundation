@@ -26,6 +26,7 @@ describe("isFeatureEnabled", () => {
 
 describe("createTranslatorFromBootstrap", () => {
   const bootstrap: TenantBootstrap = {
+    version: 1,
     tenant: { id: "tenant-1", name: "Acme" },
     locale: "en",
     translations: {
@@ -42,7 +43,7 @@ describe("createTranslatorFromBootstrap", () => {
   });
 
   it("falls back to the key when translations are absent entirely", () => {
-    const noTranslations: TenantBootstrap = { tenant: { id: "t2" }, locale: "en" };
+    const noTranslations: TenantBootstrap = { version: 1, tenant: { id: "t2" }, locale: "en" };
     const translate = createTranslatorFromBootstrap(noTranslations);
     expect(translate("some.key")).toBe("some.key");
   });

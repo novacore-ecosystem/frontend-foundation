@@ -1,2 +1,10 @@
-export type { AuthSession, ConfirmEmailRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResendEmailRequest } from "./types";
+export type {
+  AuthSession,
+  BootstrapVersionResponse,
+  ConfirmEmailRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  ResendEmailRequest,
+} from "./types";
 export { AuthEndpoints } from "./endpoints";
