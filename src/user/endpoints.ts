@@ -23,7 +23,8 @@ import type {
  * real Profile/User service when audited.
  */
 export const UserEndpoints = {
-  getMe: endpoint<void, UserProfile>({ method: HttpMethods.Get, path: "/profiles/current" }),
+  /** Backend-confirmed: `User.API`'s `GET /profiles/current/detail` (`GetUserDetailResponse` — a superset of `UserProfile`: `id`/`displayName`/`email`/`roles` line up). There is no plain `GET /profiles/current`. */
+  getMe: endpoint<void, UserProfile>({ method: HttpMethods.Get, path: "/profiles/current/detail" }),
   getById: endpoint<{ id: string }, UserDetail>({ method: HttpMethods.Get, path: "/profiles/:id" }),
   /** Mirrors the backend-confirmed `GET /profiles/current/detail` — see `CurrentUserAuthorization`'s doc comment (`../authorization/types`). */
   getEffectivePermissions: endpoint<void, CurrentUserAuthorization>({
