@@ -59,6 +59,7 @@ export class RealtimeClient {
     const builder = new HubConnectionBuilder().withUrl(options.hubUrl, {
       accessTokenFactory: options.tokenProvider ? () => this.resolveToken() : undefined,
       headers: options.headers,
+      withCredentials: options.withCredentials,
     });
 
     if (options.reconnect?.enabled !== false) {
@@ -129,10 +130,16 @@ export class RealtimeClient {
     return () => this.connection.off(eventName, wrapped);
   }
 
-  /** Invokes a hub method by name. Consumers never call `HubConnection.invoke` directly. */
+  /**
+   * Invokes a hub method by name. Consumers never call `HubConnection.invoke` directly. An
+   * array `request` is spread as individual positional arguments (SignalR hub methods often take
+   * more than one parameter, e.g. `RecoverMessages(conversationId, afterSequence)`) — anything
+   * else is passed as the method's single argument.
+   */
   async invoke<TRequest = unknown, TResponse = unknown>(methodName: string, request?: TRequest): Promise<TResponse> {
     try {
       if (request === undefined) return await this.connection.invoke<TResponse>(methodName);
+      if (Array.isArray(request)) return await this.connection.invoke<TResponse>(methodName, ...request);
       return await this.connection.invoke<TResponse>(methodName, request);
     } catch (error) {
       throw this.normalizeError(error, RealtimeErrorKinds.InvokeFailed);

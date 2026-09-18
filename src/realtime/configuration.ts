@@ -26,4 +26,11 @@ export interface RealtimeClientOptions {
   headers?: Record<string, string>;
   /** Server-side keep-alive timeout, in milliseconds. */
   timeoutMs?: number;
+  /**
+   * Send the browser's cookies with the connection handshake — the realtime counterpart of
+   * `HttpClientOptions.withCredentials`. Needed by any application whose auth is httpOnly-cookie
+   * based rather than bearer-token based (no `tokenProvider`), so the same session the REST API
+   * trusts is also trusted by the hub. Defaults to `false`, matching SignalR's own default.
+   */
+  withCredentials?: boolean;
 }
