@@ -4,26 +4,30 @@ import { HttpMethods } from "../../src/http";
 import { NotificationEndpoints, NotificationHub } from "../../src/notifications";
 
 describe("NotificationEndpoints", () => {
-  it("declares list as the backend-confirmed GET /notifications/mine", () => {
+  it("declares list as the backend-confirmed GET notification/user-notifications/me", () => {
     expect(NotificationEndpoints.list.method).toBe(HttpMethods.Get);
-    expect(NotificationEndpoints.list.path).toBe("/notifications/mine");
+    expect(NotificationEndpoints.list.path).toBe("notification/user-notifications/me");
   });
 
-  it("declares markAsRead as POST /notifications/:id/read, resolving the route param", () => {
+  it("declares markAsRead as POST notification/user-notifications/:id/read, resolving the route param", () => {
     expect(NotificationEndpoints.markAsRead.method).toBe(HttpMethods.Post);
     const { path, remaining } = resolveEndpointPath(NotificationEndpoints.markAsRead.path, { id: "n1" });
-    expect(path).toBe("/notifications/n1/read");
+    expect(path).toBe("notification/user-notifications/n1/read");
     expect(remaining).toEqual({});
   });
 
-  it("declares markAllAsRead as POST /notifications/mine/read-all", () => {
-    expect(NotificationEndpoints.markAllAsRead.method).toBe(HttpMethods.Post);
-    expect(NotificationEndpoints.markAllAsRead.path).toBe("/notifications/mine/read-all");
+  it("declares getUnreadCount as GET notification/user-notifications/me/unread-count", () => {
+    expect(NotificationEndpoints.getUnreadCount.method).toBe(HttpMethods.Get);
+    expect(NotificationEndpoints.getUnreadCount.path).toBe("notification/user-notifications/me/unread-count");
+  });
+
+  it("declares no bulk mark-all-read endpoint (confirmed absent from the backend)", () => {
+    expect("markAllAsRead" in NotificationEndpoints).toBe(false);
   });
 });
 
 describe("NotificationHub", () => {
-  it("declares a named hub, ready to bind via RealtimeClient.forHub", () => {
-    expect(NotificationHub.name).toBe("NotificationHub");
+  it("declares the shared GlobalHub, ready to bind via RealtimeClient.forHub", () => {
+    expect(NotificationHub.name).toBe("GlobalHub");
   });
 });

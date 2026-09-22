@@ -1,5 +1,5 @@
 import { hub } from "../realtime/hub";
-import type { NotificationSummary } from "./types";
+import type { NotificationPush } from "./types";
 
 /**
  * The realtime events the notification hub pushes. Kept generic/
@@ -9,20 +9,21 @@ import type { NotificationSummary } from "./types";
  * every NovaCore admin app needs live notification delivery, not one
  * particular business domain.
  *
- * `NotificationCreated`'s payload reuses `NotificationSummary` — a newly
- * pushed notification has the same shape as one row of the list feed
- * (`./endpoints`'s `list`), so there's no separate "event DTO" to keep
- * in sync with the REST shape.
+ * `ReceiveNotification`'s payload is `NotificationPush`, not
+ * `NotificationSummary` directly — the same physical push channel also
+ * fans out id-less dispatches with no Notification Center row (see
+ * `NotificationPush`'s doc comment in `./types`).
  */
 export interface NotificationHubEvents extends Record<string, unknown> {
-  NotificationCreated: NotificationSummary;
+  ReceiveNotification: NotificationPush;
 }
 
 /**
  * Bind this to a live connection via `RealtimeClient.forHub(NotificationHub)`
- * (`../realtime/client`). The hub `name` ("NotificationHub") is a
- * forward-looking placeholder — confirm it against the real backend
- * SignalR hub's registered name once audited (same caveat as
- * `../auth/types`'s endpoint paths).
+ * (`../realtime/client`). `name: "GlobalHub"` is backend-confirmed — the
+ * Notification service pushes over the same physical hub connection that
+ * `BootstrapHub` (`../bootstrap/hub`) also binds to, not a dedicated
+ * per-domain hub; a consuming app opens one `GlobalHub` connection and
+ * both hub definitions subscribe on it.
  */
-export const NotificationHub = hub<NotificationHubEvents>({ name: "NotificationHub" });
+export const NotificationHub = hub<NotificationHubEvents>({ name: "GlobalHub" });

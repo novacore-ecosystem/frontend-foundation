@@ -76,7 +76,7 @@ describe("AuthSessionController.restore", () => {
       }),
     });
     await controller.restore({ hasAccessToken: true, hasRefreshToken: true, needsRefresh: false });
-    expect(paths).toEqual(["/profiles/current/detail"]);
+    expect(paths).toEqual(["user/profiles/current/detail"]);
     expect(controller.getState().status).toBe("authenticated");
   });
 });
