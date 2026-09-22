@@ -24,14 +24,14 @@ import type {
  */
 export const UserEndpoints = {
   /** Backend-confirmed: `User.API`'s `GET /profiles/current/detail` (`GetUserDetailResponse` — a superset of `UserProfile`: `id`/`displayName`/`email`/`roles` line up). There is no plain `GET /profiles/current`. */
-  getMe: endpoint<void, UserProfile>({ method: HttpMethods.Get, path: "/profiles/current/detail" }),
-  getById: endpoint<{ id: string }, UserDetail>({ method: HttpMethods.Get, path: "/profiles/:id" }),
+  getMe: endpoint<void, UserProfile>({ method: HttpMethods.Get, path: "user/profiles/current/detail" }),
+  getById: endpoint<{ id: string }, UserDetail>({ method: HttpMethods.Get, path: "user/profiles/:id" }),
   /** Mirrors the backend-confirmed `GET /profiles/current/detail` — see `CurrentUserAuthorization`'s doc comment (`../authorization/types`). */
   getEffectivePermissions: endpoint<void, CurrentUserAuthorization>({
     method: HttpMethods.Get,
-    path: "/profiles/current/detail",
+    path: "user/profiles/current/detail",
   }),
-  updateProfile: endpoint<UpdateProfileRequest, UserProfile>({ method: HttpMethods.Patch, path: "/profiles/current" }),
+  updateProfile: endpoint<UpdateProfileRequest, UserProfile>({ method: HttpMethods.Patch, path: "user/profiles/current" }),
   /** Requires the current password; revokes every other active session on success (`Auth.API`'s `POST /reset-password`). */
   changePassword: endpoint<ChangePasswordRequest, void>({
     method: HttpMethods.Post,
